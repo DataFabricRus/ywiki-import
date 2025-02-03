@@ -1,0 +1,19 @@
+{
+  "name": "node",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "serve": "http-server ../../data"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "puppeteer": "^24.1.1",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
