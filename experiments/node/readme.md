@@ -11,10 +11,10 @@ npm run serve
 ```
 ## Примеры
 ### Сохранение страницы в md файл
-- выполнить скрипт [src/page-to-md.ts](./src/page-to-md.ts)
+- выполнить скрипт [page-to-md.ts](src/examples/page-to-md.ts)
     - при работе в VS Code для этого можно открыть скрипт и нажать F5
     - скрипт создает html и md файы на основе одной из станиц
 
 ### Получение window.\_\_DATA\_\_ со страницы
-- выполнить скрипт [src/extract-page-data.ts](./src/page-to-md.ts)
+- выполнить скрипт [extract-page-data.ts](src/examples/page-to-md.ts)
     - скрипт сохраняет значение window.\_\_DATA\_\_ в JSON файл
