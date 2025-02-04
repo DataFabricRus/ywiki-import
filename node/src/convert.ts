@@ -67,7 +67,7 @@ function countItems(items) {
 
 async function convert(resume = true) {
   const navTree = JSON.parse(
-    await fs.readFileSync("../../data/meta/nav-tree.json", "utf8")
+    await fs.readFileSync("../data/meta/nav-tree.json", "utf8")
   );
 
   if (!resume) {

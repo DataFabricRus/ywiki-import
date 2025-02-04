@@ -9,7 +9,7 @@ import * as fs from 'fs';
   );
   await page.waitForSelector("body");
   const data = await page.evaluate(() => {
-    return (window as any).__DATA__; // Assuming window.DATA is defined and accessible
+    return (window as any).__DATA__; 
   });
 
   fs.mkdirSync("temp", { recursive: true });

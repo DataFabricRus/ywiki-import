@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "serve": "http-server ../../data"
+    "serve": "http-server ../data"
   },
   "keywords": [],
   "author": "",
