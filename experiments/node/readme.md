@@ -9,6 +9,6 @@ npm install
 ```
 npm run serve
 ```
-- выполнить скрипт [src/page-to-md.js](./src/page-to-md.js)
+- выполнить скрипт [src/page-to-md.js](./src/page-to-md.ts)
     - при работе в VS Code для этого можно открыть скрипт и нажать F5
     - скрипт создает html и md файы на основе одной из станиц
