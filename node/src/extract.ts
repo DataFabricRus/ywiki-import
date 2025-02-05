@@ -4,8 +4,60 @@ import * as fs from "fs";
 const baseUrl = "http://127.0.0.1:8080/wiki.yandex.ru";
 const fileUrl = "_view%3DpdfExport.html";
 const rootPath = "temp/pages";
+import * as TurndownService from "turndown";
 
-async function extractPageData(url) {
+class Semaphore {
+  private maxConcurrent: number;
+  private currentCount: number;
+  private queue: (() => void)[];
+
+  constructor(maxConcurrent: number) {
+    this.maxConcurrent = maxConcurrent;
+    this.currentCount = 0;
+    this.queue = [];
+  }
+
+  async acquire(): Promise<void> {
+    if (this.currentCount < this.maxConcurrent) {
+      this.currentCount++;
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      this.queue.push(resolve);
+    });
+  }
+
+  release(): void {
+    this.currentCount--;
+    if (this.queue.length > 0) {
+      const nextResolve = this.queue.shift();
+      if (nextResolve) {
+        this.currentCount++;
+        nextResolve();
+      }
+    }
+  }
+}
+
+// async function limitedAsyncFunction<T>(
+//   asyncFunc: (...args: any[]) => Promise<T>,
+//   semaphore: Semaphore,
+//   ...args: any[]
+// ): Promise<T> {
+//   await semaphore.acquire();
+//   try {
+//     return await asyncFunc(...args);
+//   } finally {
+//     semaphore.release();
+//   }
+// }
+
+const semaphore = new Semaphore(10);
+
+async function extractPageContent(url) {
+  await semaphore.acquire();
+  const turndownService = new TurndownService();
   const browser: Browser = await puppeteer.launch();
   const page: Page = await browser.newPage();
   await page.goto(url);
@@ -13,8 +65,16 @@ async function extractPageData(url) {
   const data = await page.evaluate(() => {
     return (window as any).__DATA__;
   });
+
+  const html: string = await page.evaluate(() => {
+    const rootElement = document.querySelector("#root");
+    return rootElement ? rootElement.innerHTML : "";
+  });
+  const markdown = turndownService.turndown(html);
+
   await browser.close();
-  return data;
+  await semaphore.release();
+  return { data, html, markdown };
 }
 
 let totalCount = 0;
@@ -31,30 +91,50 @@ async function extractPage(parentPath, item) {
   const folderPath = `${parentPath}${folderName}/`;
   const fullFolderPath = `${rootPath}/${folderPath}`;
   const mdPath = `${fullFolderPath}page.md`;
+  
   if (!fs.existsSync(mdPath)) {
     const pageUrl = item["pageUrl"];
     console.log(processedCount, "/", totalCount, pageUrl);
     const url = `${baseUrl}${pageUrl}${fileUrl}`;
-    const data = await extractPageData(url);
-
+    const pageContent = await extractPageContent(url);
     fs.mkdirSync(fullFolderPath, { recursive: true });
-    data.folderPath = folderPath;
-    const jsonText = JSON.stringify(data);
+
+    pageContent.data.folderPath = folderPath;
+    const jsonText = JSON.stringify(pageContent.data);
     fs.writeFileSync(`${fullFolderPath}data.json`, jsonText, {
       encoding: "utf8",
     });
-    const pageName = data.preloadedState.pages.current;
+
+    fs.writeFileSync(`${fullFolderPath}rendered.html`, pageContent.html, {
+      encoding: "utf8",
+    });
+
+    fs.writeFileSync(`${fullFolderPath}rendered.md`, pageContent.markdown, {
+      encoding: "utf8",
+    });
+
+    const pageName = pageContent.data.preloadedState.pages.current;
     let mdText = "";
+    let htmlText = "";
     if (pageName !== "") {
-      mdText = data.preloadedState.pages.entities[pageName].content;
+      mdText = pageContent.data.preloadedState.pages.entities[pageName].content;
+      htmlText = pageContent.data.preloadedState.pages.entities[pageName].html;
+    }
+    if (htmlText) {
+      fs.writeFileSync(`${fullFolderPath}page.html`, htmlText, {
+        encoding: "utf8",
+      });
     }
 
     fs.writeFileSync(mdPath, mdText, { encoding: "utf8" });
   }
 
-  for (let child of item.children) {
-    await extractPage(folderPath, child);
-  }
+  // for (let child of item.children) {
+  //   extractPage(folderPath, child);
+  // }
+
+  const promises = item.children.map((child) => extractPage(folderPath, child));
+  await Promise.all(promises);
 }
 
 function countItems(items) {
@@ -74,10 +154,14 @@ async function main(resume = true) {
     fs.rmSync(rootPath, { recursive: true, force: true });
   }
   totalCount = countItems(navTree);
-  for (let item of navTree) {
-    await extractPage("/", item);
-  }
+  // for (let item of navTree) {
+  //     extractPage("/", item);
+  // }
+
+  const promises = navTree.map((item) => extractPage("/", item));
+  await Promise.all(promises);
   //   console.log(navTree);
 }
 
-main();
+main(true);
+// main(true);
