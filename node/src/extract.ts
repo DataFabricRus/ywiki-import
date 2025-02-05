@@ -20,7 +20,7 @@ async function extractPageData(url) {
 let totalCount = 0;
 let processedCount = 0;
 
-async function convertPage(parentPath, item) {
+async function extractPage(parentPath, item) {
   processedCount += 1;
   let folderName: string = item.title;
   if (!folderName) {
@@ -53,7 +53,7 @@ async function convertPage(parentPath, item) {
   }
 
   for (let child of item.children) {
-    await convertPage(folderPath, child);
+    await extractPage(folderPath, child);
   }
 }
 
@@ -65,7 +65,7 @@ function countItems(items) {
   return count;
 }
 
-async function convert(resume = true) {
+async function main(resume = true) {
   const navTree = JSON.parse(
     await fs.readFileSync("../data/meta/nav-tree.json", "utf8")
   );
@@ -75,9 +75,9 @@ async function convert(resume = true) {
   }
   totalCount = countItems(navTree);
   for (let item of navTree) {
-    await convertPage("/", item);
+    await extractPage("/", item);
   }
   //   console.log(navTree);
 }
 
-convert();
+main();
