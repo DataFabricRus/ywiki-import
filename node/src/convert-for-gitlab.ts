@@ -1,30 +1,40 @@
 import * as fs from "fs";
 
-function replaceImagesWithPlaceholder(markdownContent) {
-  const imageRegex = /!\[.*?\]\(.*?\)/g;
-  return markdownContent.replace(imageRegex, "*missing image*");
-}
 
-function replaceAngleBrackets(inputString) {
-  // Regular expression to match strings starting with <http and ending with >
-  const regex = /<http(s)?:\/\/[^>]+>/g;
 
-  // Replace the matched strings by removing the angle brackets
-  const result = inputString.replace(regex, (match) => {
-    // Remove the first and last character (the angle brackets)
-    return match.slice(1, -1);
-  });
 
-  return result;
+function formatDate(dateString) {
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, "0");
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const year = date.getFullYear();
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
+  return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
 
 function prepareText(value, title, data) {
+  let user = "-";
+  let modified = "-";
+  for (let key in data.preloadedState?.users?.entities || {}) {
+    user = data.preloadedState.users?.entities[key].display_name;
+  }
+
+  for (let key in data.preloadedState?.pages?.entities || {}) {
+    modified = data.preloadedState?.pages?.entities[key].attributes.modified_at;
+    modified = formatDate(modified);
+  }
+
   value =
     `---
 title: ${title} 
 source: ${data.preloadedState.global.yfmSettings.pluginOptions.wikiPath}
 ---
-` + value;
+` +
+    `<small>Изменено в Yandex Wiki: **${user}, ${modified}**</small>
+
+` +
+    value;
 
   // https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/
 
@@ -35,22 +45,21 @@ source: ${data.preloadedState.global.yfmSettings.pluginOptions.wikiPath}
     matches.forEach((linkMatch, index) => {
       // console.log(linkMatch);
       const linkPropRegex = /src="([^"]+)"\s+name="([^"]+)"/;
-      const match = linkMatch.match(linkPropRegex);
-    
-      const src = match[1];
-      const title = match[2];
-      const name = filesDict[src]; 
+      const propMatch = linkMatch.match(linkPropRegex);
+      if (propMatch) {
+        const src = propMatch[1];
+        const title = propMatch[2];
+        const name = filesDict[src];
 
-      const baseUrl =  "https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/"
+        const baseUrl =
+          "https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/";
 
-      const mdLink =  `[${title}](${baseUrl}${encodeURI(name)})`;
-      // console.log("src:", src);
-      // console.log("name:", name);
-   
-      result = result.replace(
-        linkMatch,
-        mdLink
-      );
+        const mdLink = `[${title}](${baseUrl}${encodeURI(name)})`;
+        // console.log("src:", src);
+        // console.log("name:", name);
+
+        result = result.replace(linkMatch, mdLink);
+      }
     });
   }
 
@@ -161,14 +170,14 @@ function getFilesDict() {
     dict[key.trim()] = value.trim();
   });
 
-   return dict;
+  return dict;
 }
 
 let filesDict = {};
 
 function main() {
   positions = getPositions();
-  filesDict =  getFilesDict();
+  filesDict = getFilesDict();
   const folders = fs
     .readdirSync(sourcePath, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
@@ -183,7 +192,7 @@ function main() {
 
 function test() {
   positions = getPositions();
-  filesDict =  getFilesDict();
+  filesDict = getFilesDict();
   fs.rmSync(targetPath + "/017-База-знаний/001-ГОСТ-Р-серии", {
     recursive: true,
     force: true,
@@ -196,6 +205,6 @@ function test() {
   );
 }
 
-// main();
+main();
 
-test();
+// test();

@@ -40,19 +40,6 @@ class Semaphore {
   }
 }
 
-// async function limitedAsyncFunction<T>(
-//   asyncFunc: (...args: any[]) => Promise<T>,
-//   semaphore: Semaphore,
-//   ...args: any[]
-// ): Promise<T> {
-//   await semaphore.acquire();
-//   try {
-//     return await asyncFunc(...args);
-//   } finally {
-//     semaphore.release();
-//   }
-// }
-
 const semaphore = new Semaphore(10);
 
 async function extractPageContent(url) {
@@ -164,4 +151,4 @@ async function main(resume = true) {
 }
 
 main(true);
-// main(true);
+
