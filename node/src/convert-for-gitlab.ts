@@ -92,7 +92,7 @@ function clearName(input, index, data) {
   if (result.length > 15) {
     result = result.substring(0, 14);
   }
-  result = positionIndex.toString().padStart(3, "0") + "-" + result;
+  result = (positionIndex * 10).toString().padStart(3, "0") + "-" + result;
   return result;
 }
 function convertPage(title, sourcePath, targetParentPath, index) {
