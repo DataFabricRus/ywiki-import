@@ -1,8 +1,5 @@
 import * as fs from "fs";
 
-
-
-
 function formatDate(dateString) {
   const date = new Date(dateString);
   const day = String(date.getDate()).padStart(2, "0");
@@ -13,7 +10,75 @@ function formatDate(dateString) {
   return `${day}.${month}.${year} ${hours}:${minutes}`;
 }
 
-function prepareText(value, title, data) {
+function fixLinks(result: any) {
+  const linkRegex = /{%\s*[^%]*\s*%}/g;
+  const matches = result.match(linkRegex);
+
+  if (matches) {
+    matches.forEach((linkMatch, index) => {
+      // console.log(linkMatch);
+      const linkPropRegex = /src="([^"]+)"\s+name="([^"]+)"/;
+      const propMatch = linkMatch.match(linkPropRegex);
+      if (propMatch) {
+        const src = propMatch[1];
+        const title = propMatch[2];
+        const name = filesDict[src];
+
+        const baseUrl =
+          "https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/";
+
+        const mdLink = `[${title}](${baseUrl}${encodeURI(name)})`;
+        // console.log("src:", src);
+        // console.log("name:", name);
+        result = result.replace(linkMatch, mdLink);
+      }
+    });
+  }
+  return result;
+}
+
+function fixTables(value: string, filePath: string): string {
+  const pattern = /#\|.*?\|#/gs;
+  const matches = value.match(pattern);
+  if (matches) {
+    for (let table of matches) {
+      const rows = table.replace("#|","").replace("|#","").split(`||
+||`);
+      const newRows = [];
+      rows.forEach((row, index) => {
+        row = row.replace("||", "");
+        const cells = row.split("|");
+        const newCells = [];
+        for (let cell of cells) {
+          if (filePath.indexOf("060-Реестр-площадок") > 0) {
+            var x = table;
+          }
+          cell = cell.trim().replace(/\n/g, "<br>").replace(/\r/g, "<br>");
+
+          while (cell.indexOf("<br><br>") > -1) {
+            cell = cell.replace("<br><br>", "<br>");
+          }
+         
+          newCells.push(cell);
+        }
+        const newRow = "|" + newCells.join("|") + "|";
+        newRows.push(newRow);
+        // console.log(newRow);
+        if (index == 0) {
+          newRows.push("|" + newCells.map(() => "---").join("|") + "|");
+        }
+      });
+      const newTable = newRows.join("\n");
+      value = value.replace(table, newTable);
+    }
+    console.log(filePath);
+    
+  }
+
+  return value;
+}
+
+function prepareText(value, title, data, filePath) {
   let user = "-";
   let modified = "-";
   for (let key in data.preloadedState?.users?.entities || {}) {
@@ -38,36 +103,12 @@ source: ${data.preloadedState.global.yfmSettings.pluginOptions.wikiPath}
 
   // https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/
 
-  const linkRegex = /{%\s*[^%]*\s*%}/g;
-  const matches = value.match(linkRegex);
   let result = value;
-  if (matches) {
-    matches.forEach((linkMatch, index) => {
-      // console.log(linkMatch);
-      const linkPropRegex = /src="([^"]+)"\s+name="([^"]+)"/;
-      const propMatch = linkMatch.match(linkPropRegex);
-      if (propMatch) {
-        const src = propMatch[1];
-        const title = propMatch[2];
-        const name = filesDict[src];
 
-        const baseUrl =
-          "https://disk.yandex.ru/client/disk/DataFabric/WikiFiles/";
-
-        const mdLink = `[${title}](${baseUrl}${encodeURI(name)})`;
-        // console.log("src:", src);
-        // console.log("name:", name);
-
-        result = result.replace(linkMatch, mdLink);
-      }
-    });
-  }
+  result = fixLinks(result);
+  result = fixTables(result, filePath);
 
   return result;
-  // result = replaceImagesWithPlaceholder(result);
-  // result =  replaceAngleBrackets(result);
-  // result =  result.replace(/{/g, " ").replace(/}/g, " ")
-  // return result;
 }
 
 function clearName(input, index, data) {
@@ -96,7 +137,7 @@ function clearName(input, index, data) {
   return result;
 }
 function convertPage(title, sourcePath, targetParentPath, index) {
-  console.log(sourcePath);
+  // console.log(sourcePath);
   const childFolders = fs
     .readdirSync(sourcePath, { withFileTypes: true })
     .filter((dirent) => dirent.isDirectory())
@@ -118,9 +159,12 @@ function convertPage(title, sourcePath, targetParentPath, index) {
   let filePath = folderPath + "/" + fileName;
   // const dataFilePath = childrenFolderPath + "/data.json";
   let content = fs.readFileSync(sourcePath + "/page.md", "utf8");
-  content = prepareText(content, title, data);
+  content = prepareText(content, title, data, filePath);
 
   fs.writeFileSync(filePath, content, "utf8");
+  if (filePath.indexOf("060-Реестр-площадок") > 0) {
+    var x = 0;
+  }
   // fs.writeFileSync(dataFilePath, dataText, "utf8");
   let childIndex = 1;
   for (let folder of childFolders) {
