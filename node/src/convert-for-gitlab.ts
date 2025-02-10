@@ -42,23 +42,23 @@ function fixTables(value: string, filePath: string): string {
   const matches = value.match(pattern);
   if (matches) {
     for (let table of matches) {
-      const rows = table.replace("#|","").replace("|#","").split(`||
-||`);
+      let rows = table.replace("#|", "").replace("|#", "").split(`||`);
+      rows = rows.map((it) => it.trim()).filter((it) => it);
       const newRows = [];
       rows.forEach((row, index) => {
         row = row.replace("||", "");
         const cells = row.split("|");
         const newCells = [];
         for (let cell of cells) {
-          if (filePath.indexOf("060-Реестр-площадок") > 0) {
-            var x = table;
-          }
+          // if (filePath.indexOf("060-Реестр-площадок") > 0) {
+          //   var x = table;
+          // }
           cell = cell.trim().replace(/\n/g, "<br>").replace(/\r/g, "<br>");
 
           while (cell.indexOf("<br><br>") > -1) {
             cell = cell.replace("<br><br>", "<br>");
           }
-         
+
           newCells.push(cell);
         }
         const newRow = "|" + newCells.join("|") + "|";
@@ -72,7 +72,6 @@ function fixTables(value: string, filePath: string): string {
       value = value.replace(table, newTable);
     }
     console.log(filePath);
-    
   }
 
   return value;
@@ -162,9 +161,9 @@ function convertPage(title, sourcePath, targetParentPath, index) {
   content = prepareText(content, title, data, filePath);
 
   fs.writeFileSync(filePath, content, "utf8");
-  if (filePath.indexOf("060-Реестр-площадок") > 0) {
-    var x = 0;
-  }
+  // if (filePath.indexOf("060-Реестр-площадок") > 0) {
+  //   var x = 0;
+  // }
   // fs.writeFileSync(dataFilePath, dataText, "utf8");
   let childIndex = 1;
   for (let folder of childFolders) {
