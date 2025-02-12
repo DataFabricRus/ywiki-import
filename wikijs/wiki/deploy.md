@@ -15,6 +15,7 @@ https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository
 https://docs.docker.com/compose/install/linux/#install-using-the-repository
 
 ### Подключение к PG из терминала для проверки
+с SSL
 ```bash
 psql "host=rc1a-wn9ns0e2z746q217.mdb.yandexcloud.net \
     port=6432 \
@@ -24,7 +25,7 @@ psql "host=rc1a-wn9ns0e2z746q217.mdb.yandexcloud.net \
     sslrootcert=/opt/wikijs/root.crt \
     target_session_attrs=read-write"
 ```
-
+без SSL
 ```bash
 psql "host=rc1a-wn9ns0e2z746q217.mdb.yandexcloud.net \
     port=6432 \
@@ -33,7 +34,6 @@ psql "host=rc1a-wn9ns0e2z746q217.mdb.yandexcloud.net \
     user=wikiadmin \
     target_session_attrs=read-write"
 ```
-
 
 ### Преобразование текста сертификата для вставки в docker-compose.yaml
 
@@ -45,6 +45,7 @@ awk 'NF {sub(/\r/, ""); printf "%s\\n",$0;}' root.crt
 Настроил подключение без SSL. 
 
 ### Запуск
+заполнить пароль к БД в /opt/wikijs/docker-compose.yaml
 ```bash
 cd /opt/wikijs
 sudo docker compose up -d
